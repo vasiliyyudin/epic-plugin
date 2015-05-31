@@ -1,0 +1,25 @@
+{
+    "description": "Composer plugin for epic/facade",
+    "keywords": ["facade"],
+    "homepage": "https://github.com/vasiliyyudin/epic-plugin/",
+    "name": "epic/plugin",
+    "type": "composer-plugin",
+    "require": {
+        "composer-plugin-api": "1.0.0"
+    },
+    "autoload": {
+        "psr-4": { "Epic\\Plugin\\": "" }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Vasiliy Yudin",
+            "email": "brainburgerst2@gmail.com"
+        }
+    ],
+    "extra": {
+        "branch-alias": {
+            "dev-master": "master-dev"
+        }
+    }
+}
