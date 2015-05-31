@@ -23,8 +23,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 	public static function getSubscribedEvents()
 	{
 		return array(
-			ScriptEvents::POST_INSTALL_CMD => 'postInstall',
-			ScriptEvents::POST_UPDATE_CMD => 'postInstall',
+			ScriptEvents::POST_INSTALL_CMD => 'testEvent',
+			ScriptEvents::POST_UPDATE_CMD => 'testEvent',
 		);
 	}
 

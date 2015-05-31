@@ -20,6 +20,7 @@
     "extra": {
         "branch-alias": {
             "dev-master": "master-dev"
-        }
+        },
+        "class": "Epic\\Plugins\\Plugin"
     }
 }
