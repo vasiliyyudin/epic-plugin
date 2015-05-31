@@ -8,7 +8,7 @@
         "composer-plugin-api": "1.0.0"
     },
     "autoload": {
-        "psr-4": { "Epic\\Plugin\\": "" }
+        "psr-4": { "Epic\\Plugins\\": "" }
     },
     "license": "MIT",
     "authors": [
