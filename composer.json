@@ -5,8 +5,7 @@
     "name": "epic/plugin",
     "type": "composer-plugin",
     "require": {
-        "composer-plugin-api": "1.0.0",
-        "hanneskod/classtools": "1.0"
+        "composer-plugin-api": "1.0.0"
     },
     "autoload": {
         "psr-4": { "Epic\\Plugins\\": "" }

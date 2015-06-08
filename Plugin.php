@@ -1,17 +1,11 @@
 <?php namespace Epic\Plugins;
-require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\EventDispatcher\EventSubscriberInterface;
-use Composer\Script\CommandEvent;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
-
-use Symfony\Component\Finder\Finder;
-use hanneskod\classtools\Iterator\ClassIterator;
-
 
 
 class Plugin implements PluginInterface, EventSubscriberInterface
@@ -35,23 +29,34 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
 	public function testEvent(Event $event)
 	{
-		$dir = __DIR__ . '/../../../project/';
-		echo $dir . PHP_EOL;
+		$dir = __DIR__ . '/../../../';
 
-		$finder = new Finder;
-		$iter = new ClassIterator($finder->in($dir));
-		$iter->enableAutoloading();
+		$allFiles = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+		$phpFiles = new \RegexIterator($allFiles, '/\.php$/');
 
-		foreach ($iter->type('Epic\Facade\Facade') as $class) {
-			echo $class->getName() . PHP_EOL;
+		foreach ($phpFiles as $phpFile) {
+			/** @var \SplFileInfo $phpFile */
+			if($phpFile->getBasename() != 'Staff.php'){
+				continue;
+			}
+
+			$content = file_get_contents($phpFile->getRealPath());
+			$tokens = token_get_all($content);
+
+			for ($index = 0; isset($tokens[$index]); $index++) {
+				if (!isset($tokens[$index][0])) {
+					continue;
+				}
+				if (T_INTERFACE === $tokens[$index][0] && $tokens[$index][1] == 'class') {
+					$index += 2; // Skip class keyword and whitespace
+
+					if(T_OBJECT_OPERATOR === $tokens[$index][0]){ // extends
+
+					}
+				}
+			}
+
+			var_dump($tokens);
 		}
-
-
-
-//		// Print the file names of classes, interfaces and traits in 'src'
-//		foreach ($iter->getClassMap() as $classname => $splFileInfo) {
-//			echo $classname.': '.$splFileInfo->getRealPath();
-//		}
-
 	}
 }
