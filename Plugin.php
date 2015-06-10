@@ -35,14 +35,109 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 		$phpFiles = new \RegexIterator($allFiles, '/\.php$/');
 
 		$facadeClass = array();
+		$classMap = [];
 		foreach ($phpFiles as $phpFile) {
 			/** @var \SplFileInfo $phpFile */
-//			if($phpFile->getBasename() != 'Staff.php'){
-//				continue;
-//			}
+			if($phpFile->getBasename() != 'Staff.php'){
+				continue;
+			}
 
 			$content = file_get_contents($phpFile->getRealPath());
 			$tokens = token_get_all($content);
+
+			$index = 0;
+			$namespace = '';
+			$fileUse = [];
+			$fileClases = [];
+
+			try {
+
+
+				do{
+					if(is_array($tokens[$index])){
+						if($tokens[$index][1] == 'namespace'){
+							$index += 2;
+							while(is_array($tokens[$index])){
+								$namespace .= $tokens[$index][1];
+								$index++;
+							}
+							if($tokens[$index] == ';'){
+								continue;
+							}
+//						if(!$namespace)
+//							$namespace = '\\';
+						}
+						if($tokens[$index][1] == 'use'){
+							$index += 2;
+							$class = '';
+							$classAs = '';
+							while(is_array($tokens[$index])){
+								if($tokens[$index][1] == 'as'){
+									$index += 2;
+									$classAs = $tokens[$index][1];
+								} else {
+									$class .= $tokens[$index][1];
+								}
+								$index++;
+							}
+							if(!$classAs && $class){
+								$clArray = explode('\\', $class);
+								$classAs = end($clArray);
+							}
+							if(!is_array($tokens[$index]) && $tokens[$index] == ';'){
+								$fileUse[$classAs] = $class;
+								$index++;
+							}
+						}
+						if($tokens[$index][1] == 'class'){
+							$index += 2;
+							$className = $tokens[$index][1];
+							$index += 2;
+							$extFrom = '';
+							if(is_array($tokens[$index]) && $tokens[$index][1] == 'extends'){
+								$index++;
+							}
+
+//						if(is_array($tokens[$index]) && $tokens[$index] == ' '){
+//							$index++;
+//							if(is_array($tokens[$index]) && $tokens[$index] == 'extends'){
+//
+//							} else {
+//								continue;
+//							}
+//						} else {
+//							continue;
+//						}
+
+							while(is_array($tokens[$index])){
+								if($tokens[$index][1] == 'implements')
+									break;
+								$extFrom .= $tokens[$index][1];
+								$index++;
+							}
+
+							$fileClases[] = [
+								'name' => $className,
+								'namespace' => $namespace,
+								'file' => $phpFile->getRealPath(),
+								'extend' => trim($extFrom)
+							];
+
+						}
+					}
+					$index++;
+				} while(isset($tokens[$index]));
+
+			}catch (\Exception $e){
+				var_dump($e->getMessage() . '  on line   ' . $e->getLine());
+				var_dump($tokens[$index]);
+			}
+
+
+			var_dump($fileUse);
+			var_dump($fileClases);
+			continue;
+
 
 			$classForExtend = false;
 			$namespace = '';
@@ -67,7 +162,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 						$facadeClass[] = [
 							'name' => $className,
 							'namespace' => $namespace,
-							'file' => $phpFile->getRealPath()
+							'file' => $phpFile->getRealPath(),
+							'extend' => ''
 						];
 
 					}
@@ -77,15 +173,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
 		}
 
-		var_dump($facadeClass);
+//		var_dump($facadeClass);
 	}
 
 	protected function getUseClass($tokens, $index){
 		$token = $tokens[$index];
 
-//		if(is_array($token) && $token[0] == T_GLOBAL && $token[1] == 'use'){ // T_GLOBAL = 346???
 		if(is_array($token)  && $token[1] == 'use'){
-//			$index += 2; // next index = whitespace
 			// use Epic\Facade\Facade;
 			if($tokens[$index + 2][1] == 'Epic' && $tokens[$index + 4][1] == 'Facade' && $tokens[$index + 6][1] == 'Facade'){
 				if($tokens[$index + 7] == ';'){
