@@ -34,11 +34,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 		$allFiles = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
 		$phpFiles = new \RegexIterator($allFiles, '/\.php$/');
 
-		$facadeClass = array();
-		$classMap = [];
+		$projClasses = [];
 		foreach ($phpFiles as $phpFile) {
 			/** @var \SplFileInfo $phpFile */
-			if($phpFile->getBasename() != 'Staff.php'){
+			if($phpFile->getBasename() != 'Staff.php' && $phpFile->getBasename() != 'LpprStaff.php'){
 				continue;
 			}
 
@@ -56,16 +55,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 				do{
 					if(is_array($tokens[$index])){
 						if($tokens[$index][1] == 'namespace'){
+							$namespace = ''; // prevent 2 or more namespaces in one file
 							$index += 2;
 							while(is_array($tokens[$index])){
 								$namespace .= $tokens[$index][1];
 								$index++;
 							}
-							if($tokens[$index] == ';'){
+							if($tokens[$index] == ';' || $tokens[$index] == '{'){
 								continue;
 							}
-//						if(!$namespace)
-//							$namespace = '\\';
 						}
 						if($tokens[$index][1] == 'use'){
 							$index += 2;
@@ -98,26 +96,24 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 								$index++;
 							}
 
-//						if(is_array($tokens[$index]) && $tokens[$index] == ' '){
-//							$index++;
-//							if(is_array($tokens[$index]) && $tokens[$index] == 'extends'){
-//
-//							} else {
-//								continue;
-//							}
-//						} else {
-//							continue;
-//						}
-
 							while(is_array($tokens[$index])){
 								if($tokens[$index][1] == 'implements')
 									break;
 								$extFrom .= $tokens[$index][1];
 								$index++;
 							}
+							$extFrom = trim($extFrom);
+
+							$namespace = trim($namespace);
+							if(array_key_exists($extFrom, $fileUse)){
+								$extFrom = $fileUse[$extFrom];
+							} else if(!strpos('\\', $extFrom) !== 0){
+								$extFrom = $namespace . '\\' . $extFrom;
+							}
 
 							$fileClases[] = [
 								'name' => $className,
+								'fullName' => $namespace . '\\' . $className,
 								'namespace' => $namespace,
 								'file' => $phpFile->getRealPath(),
 								'extend' => trim($extFrom)
@@ -133,64 +129,29 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 				var_dump($tokens[$index]);
 			}
 
-
-			var_dump($fileUse);
-			var_dump($fileClases);
-			continue;
-
-
-			$classForExtend = false;
-			$namespace = '';
-			for ($index = 0; isset($tokens[$index]); $index++) {
-				if(is_array($tokens[$index]) && $tokens[$index][1] == 'namespace'){
-					$nmIndex = $index + 2;
-					do {
-						$namespace .= $tokens[$nmIndex][1];
-						$nmIndex++;
-					} while (is_array($tokens[$nmIndex]));
-				}
-				if(!$classForExtend){
-					$classForExtend = $this->getUseClass($tokens, $index);
-					if($classForExtend){
-						continue;
-					}
-				}
-
-				if(is_array($tokens[$index]) && $tokens[$index][1] == 'class' && is_array($tokens[$index + 4]) && $tokens[$index + 4][1] == 'extends'){
-					if(is_array($tokens[$index + 6]) && $tokens[$index + 6][1] == $classForExtend && is_array($tokens[$index + 2])){
-						$className = $tokens[$index + 2][1];
-						$facadeClass[] = [
-							'name' => $className,
-							'namespace' => $namespace,
-							'file' => $phpFile->getRealPath(),
-							'extend' => ''
-						];
-
-					}
-				}
-
-			}
-
+			$projClasses = array_merge($projClasses, $fileClases);
 		}
 
-//		var_dump($facadeClass);
-	}
+		$masterClasses = [
+			'Epic\Facade\Facade'
+		];
 
-	protected function getUseClass($tokens, $index){
-		$token = $tokens[$index];
-
-		if(is_array($token)  && $token[1] == 'use'){
-			// use Epic\Facade\Facade;
-			if($tokens[$index + 2][1] == 'Epic' && $tokens[$index + 4][1] == 'Facade' && $tokens[$index + 6][1] == 'Facade'){
-				if($tokens[$index + 7] == ';'){
-					return 'Facade';
-				} else {
-					// use Epic\Facade\Facade as FF;
-					return $tokens[$index + 10][1];
+		for($iteration = 0; $iteration < 3; $iteration++){
+			foreach ($projClasses as $class) {
+				if(in_array($class['extend'], $masterClasses) && !in_array($class['fullName'], $masterClasses)){
+					$masterClasses[] = $class['fullName'];
 				}
 			}
 		}
-		return false;
-	}
 
+		$result = [];
+		foreach ($projClasses as $class) {
+			if(in_array($class['extend'], $masterClasses)){
+				$result[] = $class;
+			}
+		}
+
+		var_dump($masterClasses);
+		var_dump($result);
+	}
 }
