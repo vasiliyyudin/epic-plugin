@@ -144,14 +144,20 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 			}
 		}
 
-		$result = [];
+//        $result = [];
+		$file = __DIR__ . '/../../aliases.php';
+		$fh = fopen($file, 'w');
+		fwrite($fh, "<?php\n");
 		foreach ($projClasses as $class) {
 			if(in_array($class['extend'], $masterClasses)){
-				$result[] = $class;
+//                $result[] = $class;
+				fwrite($fh, "class_alias('" . $class['fullName'] . "', '" . $class['name'] . "');" . "\n");
 			}
 		}
+		fclose($fh);
 
-		var_dump($masterClasses);
-		var_dump($result);
+//
+//        var_dump($masterClasses);
+//        var_dump($result);
 	}
 }
